@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package",
-  "name": "template-typescript",
+  "name": "create-tag",
   "version": "1.0.0",
   "engines": {
     "node": ">=12"
