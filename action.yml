@@ -1,0 +1,11 @@
+name: Template action
+description: Template action description
+
+inputs:
+  githubToken:
+    required: true
+    description: GitHub access token with at least 'public_repo' (use 'repo' scope instead of 'public_repo' for private repositories)
+
+runs:
+  using: node12
+  main: 'dist/index.js'
