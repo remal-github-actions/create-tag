@@ -1,2 +1,2 @@
-# template-typescript
-Template repository for GitHub typescript actions
+# create-tag
+Create Git tag for current commit

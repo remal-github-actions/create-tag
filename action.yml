@@ -5,6 +5,31 @@ inputs:
   githubToken:
     required: true
     description: GitHub access token with at least 'public_repo' (use 'repo' scope instead of 'public_repo' for private repositories)
+  tagName:
+    required: true
+    description: Git tag name
+  message:
+    required: false
+    description: Git tag message
+  committerName:
+    required: false
+    description: Committer name
+  committerEmail:
+    required: false
+    description: Committer email
+  forcePush:
+    required: true
+    default: 'false'
+    description: Set to 'true' to enable force push
+  remoteBranch:
+    required: false
+    description: Branch to check if remote repository has been changed
+
+outputs:
+  result:
+    description: |
+      'remote-changed' - remote repository branch has been changed, push-back is skipped;
+      'tagged-successfully' - tag has been created successfully;
 
 runs:
   using: node12
