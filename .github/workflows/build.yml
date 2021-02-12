@@ -66,3 +66,4 @@ jobs:
       with:
         githubToken: ${{ env.PUSH_BACK_TOKEN }}
         tagName: 'v${{ steps.readVersion.outputs.majorVersion }}'
+        forcePush: 'true'
