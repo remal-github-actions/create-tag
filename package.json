@@ -20,7 +20,7 @@
     "@octokit/plugin-throttling": "3.4.1"
   },
   "devDependencies": {
-    "@types/node": "14.14.26",
+    "@types/node": "14.14.27",
     "@typescript-eslint/parser": "4.15.0",
     "@vercel/ncc": "0.27.0",
     "eslint": "7.19.0",
