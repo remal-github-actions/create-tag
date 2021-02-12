@@ -91,11 +91,6 @@ function run() {
                 }
                 return currentBranch;
             })();
-            const currentCommitSha = yield core.group('Getting HEAD commit SHA', () => __awaiter(this, void 0, void 0, function* () {
-                const sha = yield getCurrentCommitSha(git);
-                core.info(`HEAD commit SHA: ${sha}`);
-                return sha;
-            }));
             const pushRemoteName = 'push-tag';
             const prevConfigValues = {};
             try {
@@ -155,6 +150,11 @@ function run() {
                         const targetLatestCommitSha = yield getLatestCommitSha(git, pushRemoteName, remoteBranch);
                         if (targetLatestCommitSha) {
                             core.info(`Remote branch '${remoteBranch}' last commit SHA: ${targetLatestCommitSha}`);
+                            const currentCommitSha = yield core.group('Getting HEAD commit SHA', () => __awaiter(this, void 0, void 0, function* () {
+                                const sha = yield getCurrentCommitSha(git);
+                                core.info(`HEAD commit SHA: ${sha}`);
+                                return sha;
+                            }));
                             if (targetLatestCommitSha !== currentCommitSha) {
                                 return true;
                             }
