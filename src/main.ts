@@ -114,11 +114,8 @@ async function run(): Promise<void> {
                         const targetLatestCommitSha = await getLatestCommitSha(git, pushRemoteName, remoteBranch)
                         if (targetLatestCommitSha) {
                             core.info(`Remote branch '${remoteBranch}' last commit SHA: ${targetLatestCommitSha}`)
-                            const currentCommitSha = await core.group('Getting HEAD commit SHA', async () => {
-                                const sha = await getCurrentCommitSha(git)
-                                core.info(`HEAD commit SHA: ${sha}`)
-                                return sha
-                            })
+                            const currentCommitSha = await getCurrentCommitSha(git)
+                            core.info(`HEAD commit SHA: ${currentCommitSha}`)
                             if (targetLatestCommitSha !== currentCommitSha) {
                                 return true
                             }
