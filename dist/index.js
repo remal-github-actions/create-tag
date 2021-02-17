@@ -11,10 +11,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const path_1 = __importDefault(__nccwpck_require__(5622));
-let workspacePath = process.env['GITHUB_WORKSPACE'] || '';
-if (!workspacePath) {
-    throw new Error('GITHUB_WORKSPACE not defined');
-}
+let workspacePath = process.env['GITHUB_WORKSPACE'] || process.cwd();
 workspacePath = path_1.default.resolve(workspacePath);
 module.exports = workspacePath;
 
