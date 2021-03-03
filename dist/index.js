@@ -42,21 +42,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const simple_git_1 = __importDefault(__nccwpck_require__(1477));
+const url_1 = __nccwpck_require__(8835);
 const workspacePath_1 = __importDefault(__nccwpck_require__(3948));
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 const TAG_REF_PREFIX = 'refs/tags/';
@@ -65,186 +57,174 @@ const RESULT = {
     TAGGED_SUCCESSFULLY: 'tagged-successfully',
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-function run() {
+async function run() {
     var _a;
-    return __awaiter(this, void 0, void 0, function* () {
+    try {
+        const repositoryFullName = process.env.GITHUB_REPOSITORY;
+        if (!repositoryFullName) {
+            throw new Error('GITHUB_REPOSITORY not defined');
+        }
+        const githubToken = core.getInput('githubToken', { required: true });
+        core.setSecret(githubToken);
+        const tagName = core.getInput('tagName', { required: true });
+        if (((_a = process.env.ACTIONS_STEP_DEBUG) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true') {
+            __nccwpck_require__(8231).enable('simple-git');
+        }
+        const git = simple_git_1.default(workspacePath_1.default);
+        const currentBranch = await getCurrentBranchName(git);
+        const remoteBranch = (function () {
+            const remoteBranchInput = core.getInput('remoteBranch');
+            if (remoteBranchInput) {
+                return remoteBranchInput;
+            }
+            if (currentBranch === 'HEAD') {
+                return undefined;
+            }
+            return currentBranch;
+        })();
+        const pushRemoteName = 'push-tag';
+        const prevConfigValues = {};
         try {
-            const repositoryFullName = process.env.GITHUB_REPOSITORY;
-            if (!repositoryFullName) {
-                throw new Error('GITHUB_REPOSITORY not defined');
+            await core.group('Configuring Git committer info', async () => {
+                const configuredName = await getGitConfig(git, 'user.name');
+                if (configuredName) {
+                    core.debug(`Configured committer name: ${configuredName}`);
+                    prevConfigValues['user.name'] = configuredName;
+                }
+                const name = core.getInput('committerName')
+                    || configuredName
+                    || process.env.GITHUB_ACTOR
+                    || repositoryFullName.split('/')[0];
+                core.info(`Committer name: ${name}`);
+                await git.addConfig('user.name', name);
+                const configuredEmail = await getGitConfig(git, 'user.email');
+                if (configuredEmail) {
+                    core.debug(`Configured committer email: ${configuredEmail}`);
+                    prevConfigValues['user.email'] = configuredEmail;
+                }
+                const email = core.getInput('committerEmail') || configuredEmail || `${name}@users.noreply.github.com`;
+                core.info(`Committer email: ${email}`);
+                await git.addConfig('user.email', email);
+            });
+            const serverUrl = new url_1.URL(process.env['GITHUB_SERVER_URL']
+                || process.env['GITHUB_URL']
+                || 'https://github.com');
+            core.debug(`Server URL: ${serverUrl}`);
+            const remoteUrl = new url_1.URL(serverUrl.toString());
+            if (!remoteUrl.pathname.endsWith('/')) {
+                remoteUrl.pathname += '/';
             }
-            const githubToken = core.getInput('githubToken', { required: true });
-            core.setSecret(githubToken);
-            const tagName = core.getInput('tagName', { required: true });
-            if (((_a = process.env.ACTIONS_STEP_DEBUG) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true') {
-                __nccwpck_require__(8231).enable('simple-git');
-            }
-            const git = simple_git_1.default(workspacePath_1.default);
-            const currentBranch = yield getCurrentBranchName(git);
-            const remoteBranch = (function () {
-                const remoteBranchInput = core.getInput('remoteBranch');
-                if (remoteBranchInput) {
-                    return remoteBranchInput;
+            remoteUrl.pathname += `${repositoryFullName}.git`;
+            remoteUrl.search = '';
+            remoteUrl.hash = '';
+            core.debug(`Remote URL: ${remoteUrl}`);
+            await core.group(`Adding '${pushRemoteName}' remote`, async () => {
+                const configuredRemoteNames = await git.getRemotes()
+                    .then(remotes => remotes.map(remote => remote.name));
+                core.debug(`Configured remote names: ${configuredRemoteNames.join(', ')}`);
+                if (configuredRemoteNames.includes(pushRemoteName)) {
+                    throw new Error(`Remote already exists: ${pushRemoteName}`);
                 }
-                if (currentBranch === 'HEAD') {
-                    return undefined;
+                const extraHeaderConfigKey = `http.${serverUrl.origin}/.extraheader`;
+                const configuredExtraHeader = await getGitConfig(git, extraHeaderConfigKey);
+                if (configuredExtraHeader) {
+                    prevConfigValues[extraHeaderConfigKey] = configuredExtraHeader;
                 }
-                return currentBranch;
-            })();
-            const pushRemoteName = 'push-tag';
-            const prevConfigValues = {};
-            try {
-                yield core.group('Configuring Git committer info', () => __awaiter(this, void 0, void 0, function* () {
-                    const configuredName = yield getGitConfig(git, 'user.name');
-                    if (configuredName) {
-                        core.debug(`Configured committer name: ${configuredName}`);
-                        prevConfigValues['user.name'] = configuredName;
-                    }
-                    const name = core.getInput('committerName')
-                        || configuredName
-                        || process.env.GITHUB_ACTOR
-                        || repositoryFullName.split('/')[0];
-                    core.info(`Committer name: ${name}`);
-                    yield git.addConfig('user.name', name);
-                    const configuredEmail = yield getGitConfig(git, 'user.email');
-                    if (configuredEmail) {
-                        core.debug(`Configured committer email: ${configuredEmail}`);
-                        prevConfigValues['user.email'] = configuredEmail;
-                    }
-                    const email = core.getInput('committerEmail') || configuredEmail || `${name}@users.noreply.github.com`;
-                    core.info(`Committer email: ${email}`);
-                    yield git.addConfig('user.email', email);
-                }));
-                const serverUrl = new URL(process.env['GITHUB_SERVER_URL']
-                    || process.env['GITHUB_URL']
-                    || 'https://github.com');
-                core.debug(`Server URL: ${serverUrl}`);
-                const remoteUrl = new URL(serverUrl.toString());
-                if (!remoteUrl.pathname.endsWith('/')) {
-                    remoteUrl.pathname += '/';
-                }
-                remoteUrl.pathname += `${repositoryFullName}.git`;
-                remoteUrl.search = '';
-                remoteUrl.hash = '';
-                core.debug(`Remote URL: ${remoteUrl}`);
-                yield core.group(`Adding '${pushRemoteName}' remote`, () => __awaiter(this, void 0, void 0, function* () {
-                    const configuredRemoteNames = yield git.getRemotes()
-                        .then(remotes => remotes.map(remote => remote.name));
-                    core.debug(`Configured remote names: ${configuredRemoteNames.join(', ')}`);
-                    if (configuredRemoteNames.includes(pushRemoteName)) {
-                        throw new Error(`Remote already exists: ${pushRemoteName}`);
-                    }
-                    const extraHeaderConfigKey = `http.${serverUrl.origin}/.extraheader`;
-                    const configuredExtraHeader = yield getGitConfig(git, extraHeaderConfigKey);
-                    if (configuredExtraHeader) {
-                        prevConfigValues[extraHeaderConfigKey] = configuredExtraHeader;
-                    }
-                    core.debug('Adding remote');
-                    yield git.addRemote(pushRemoteName, remoteUrl.toString());
-                    core.info(`Remote added: ${remoteUrl.toString()}`);
-                    core.info('Setting up credentials');
-                    const basicCredentials = Buffer.from(`x-access-token:${githubToken}`, 'utf8').toString('base64');
-                    core.setSecret(basicCredentials);
-                    yield git.addConfig(extraHeaderConfigKey, `Authorization: basic ${basicCredentials}`);
-                }));
-                const forcePush = core.getInput('forcePush').toLowerCase() === 'true';
-                const isRemoteChanged = yield core.group(`Creating tag '${tagName}'${forcePush ? ' (force push enabled)' : ''}`, () => __awaiter(this, void 0, void 0, function* () {
-                    if (remoteBranch) {
-                        const targetLatestCommitSha = yield getLatestCommitSha(git, pushRemoteName, remoteBranch);
-                        if (targetLatestCommitSha) {
-                            core.info(`Remote branch '${remoteBranch}' last commit SHA: ${targetLatestCommitSha}`);
-                            const currentCommitSha = yield getCurrentCommitSha(git);
-                            core.info(`HEAD commit SHA: ${currentCommitSha}`);
-                            if (targetLatestCommitSha !== currentCommitSha) {
-                                return true;
-                            }
-                        }
-                        else {
-                            throw new Error(`Remote ${remoteUrl.toString()} doesn't have '${remoteBranch}' branch`);
+                core.debug('Adding remote');
+                await git.addRemote(pushRemoteName, remoteUrl.toString());
+                core.info(`Remote added: ${remoteUrl.toString()}`);
+                core.info('Setting up credentials');
+                const basicCredentials = Buffer.from(`x-access-token:${githubToken}`, 'utf8').toString('base64');
+                core.setSecret(basicCredentials);
+                await git.addConfig(extraHeaderConfigKey, `Authorization: basic ${basicCredentials}`);
+            });
+            const forcePush = core.getInput('forcePush').toLowerCase() === 'true';
+            const isRemoteChanged = await core.group(`Creating tag '${tagName}'${forcePush ? ' (force push enabled)' : ''}`, async () => {
+                if (remoteBranch) {
+                    const targetLatestCommitSha = await getLatestCommitSha(git, pushRemoteName, remoteBranch);
+                    if (targetLatestCommitSha) {
+                        core.info(`Remote branch '${remoteBranch}' last commit SHA: ${targetLatestCommitSha}`);
+                        const currentCommitSha = await getCurrentCommitSha(git);
+                        core.info(`HEAD commit SHA: ${currentCommitSha}`);
+                        if (targetLatestCommitSha !== currentCommitSha) {
+                            return true;
                         }
                     }
-                    core.info(`Creating tag '${tagName}'`);
-                    const message = core.getInput('message');
-                    if (message) {
-                        yield git.tag(['--force', '-m', message, tagName]);
-                    }
                     else {
-                        yield git.tag(['--force', tagName]);
+                        throw new Error(`Remote ${remoteUrl.toString()} doesn't have '${remoteBranch}' branch`);
                     }
-                    core.info(`Pushing tag '${tagName}'`);
-                    if (forcePush) {
-                        yield git.push(pushRemoteName, TAG_REF_PREFIX + tagName, ['--force']);
-                    }
-                    else {
-                        yield git.push(pushRemoteName, TAG_REF_PREFIX + tagName);
-                    }
-                    return false;
-                }));
-                if (isRemoteChanged) {
-                    core.warning(`Remote repository branch '${remoteBranch}' has been changed, skipping tag creation`);
-                    core.setOutput('result', RESULT.REMOTE_CHANGED);
+                }
+                core.info(`Creating tag '${tagName}'`);
+                const message = core.getInput('message');
+                if (message) {
+                    await git.tag(['--force', '-m', message, tagName]);
                 }
                 else {
-                    core.setOutput('result', RESULT.TAGGED_SUCCESSFULLY);
+                    await git.tag(['--force', tagName]);
                 }
+                core.info(`Pushing tag '${tagName}'`);
+                if (forcePush) {
+                    await git.push(pushRemoteName, TAG_REF_PREFIX + tagName, ['--force']);
+                }
+                else {
+                    await git.push(pushRemoteName, TAG_REF_PREFIX + tagName);
+                }
+                return false;
+            });
+            if (isRemoteChanged) {
+                core.warning(`Remote repository branch '${remoteBranch}' has been changed, skipping tag creation`);
+                core.setOutput('result', RESULT.REMOTE_CHANGED);
             }
-            catch (error) {
-                core.setFailed(error);
-            }
-            finally {
-                yield core.group(`Removing '${pushRemoteName}' remote`, () => __awaiter(this, void 0, void 0, function* () {
-                    yield git.removeRemote(pushRemoteName);
-                }));
-                yield core.group('Restoring previous config values', () => __awaiter(this, void 0, void 0, function* () {
-                    for (const key in prevConfigValues) {
-                        const value = prevConfigValues[key];
-                        yield git.addConfig(key, value);
-                    }
-                }));
+            else {
+                core.setOutput('result', RESULT.TAGGED_SUCCESSFULLY);
             }
         }
         catch (error) {
             core.setFailed(error);
         }
-    });
+        finally {
+            await core.group(`Removing '${pushRemoteName}' remote`, async () => {
+                await git.removeRemote(pushRemoteName);
+            });
+            await core.group('Restoring previous config values', async () => {
+                for (const key in prevConfigValues) {
+                    const value = prevConfigValues[key];
+                    await git.addConfig(key, value);
+                }
+            });
+        }
+    }
+    catch (error) {
+        core.setFailed(error);
+    }
 }
 //noinspection JSIgnoredPromiseFromCall
 run();
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-function getGitConfig(git, configKey, defaultValue = '') {
-    return __awaiter(this, void 0, void 0, function* () {
-        return git.raw('config', '--default', defaultValue, '--get', configKey)
-            .then(text => text.trim());
-    });
+async function getGitConfig(git, configKey, defaultValue = '') {
+    return git.raw('config', '--default', defaultValue, '--get', configKey)
+        .then(text => text.trim());
 }
-function getCurrentCommitSha(git) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return git.raw('rev-parse', 'HEAD')
-            .then(text => text.trim());
-    });
+async function getCurrentCommitSha(git) {
+    return git.raw('rev-parse', 'HEAD')
+        .then(text => text.trim());
 }
-function getCurrentBranchName(git) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return git.raw('rev-parse', '--abbrev-ref', 'HEAD')
-            .then(text => text.trim());
-    });
+async function getCurrentBranchName(git) {
+    return git.raw('rev-parse', '--abbrev-ref', 'HEAD')
+        .then(text => text.trim());
 }
-function getRemoteTags(git, remoteName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return git.listRemote(['--tags', remoteName])
-            .then(text => text.trim())
-            .then(text => text.split('\n')
-            .map(line => line.replace(/^[0-9a-f]\s+/, ''))
-            .filter(ref => ref.startsWith(TAG_REF_PREFIX))
-            .map(ref => ref.substr(TAG_REF_PREFIX.length)));
-    });
+async function getRemoteTags(git, remoteName) {
+    return git.listRemote(['--tags', remoteName])
+        .then(text => text.trim())
+        .then(text => text.split('\n')
+        .map(line => line.replace(/^[0-9a-f]\s+/, ''))
+        .filter(ref => ref.startsWith(TAG_REF_PREFIX))
+        .map(ref => ref.substr(TAG_REF_PREFIX.length)));
 }
-function getLatestCommitSha(git, remoteName, remoteBranch) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return git.listRemote([remoteName, `refs/heads/${remoteBranch}`])
-            .then(text => text.trim())
-            .then(text => text.split(/\s/)[0]);
-    });
+async function getLatestCommitSha(git, remoteName, remoteBranch) {
+    return git.listRemote([remoteName, `refs/heads/${remoteBranch}`])
+        .then(text => text.trim())
+        .then(text => text.split(/\s/)[0]);
 }
 
 
@@ -7326,6 +7306,14 @@ module.exports = require("path");;
 
 "use strict";
 module.exports = require("tty");;
+
+/***/ }),
+
+/***/ 8835:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("url");;
 
 /***/ }),
 

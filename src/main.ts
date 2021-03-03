@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import simpleGit from 'simple-git'
 import {SimpleGit} from 'simple-git/promise'
+import {URL} from 'url'
 import workspacePath from './internal/workspacePath'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
