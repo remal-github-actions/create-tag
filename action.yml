@@ -1,5 +1,5 @@
-name: Template action
-description: Template action description
+name: Create Git tag
+description: Create Git tag for current commit
 
 inputs:
   githubToken:
