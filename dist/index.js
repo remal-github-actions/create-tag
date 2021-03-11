@@ -70,7 +70,9 @@ async function run() {
         if (((_a = process.env.ACTIONS_STEP_DEBUG) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true') {
             __nccwpck_require__(8231).enable('simple-git');
         }
-        const git = simple_git_1.default(workspacePath_1.default);
+        const git = simple_git_1.default(workspacePath_1.default, {
+            timeout: { block: 300000 },
+        });
         const currentBranch = await getCurrentBranchName(git);
         const remoteBranch = (function () {
             const remoteBranchInput = core.getInput('remoteBranch');
