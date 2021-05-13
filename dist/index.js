@@ -1789,16 +1789,14 @@ const {SimpleGitApi} = __nccwpck_require__(999);
 
 const {Scheduler} = __nccwpck_require__(3421);
 const {GitLogger} = __nccwpck_require__(7178);
-const {adhocExecTask, configurationErrorTask} = __nccwpck_require__(2815);
+const {configurationErrorTask} = __nccwpck_require__(2815);
 const {
-   NOOP,
    asArray,
    filterArray,
    filterPrimitives,
    filterString,
    filterStringOrStringArray,
    filterType,
-   folderExists,
    getTrailingOptions,
    trailingFunctionArgument,
    trailingOptionsArgument
@@ -1873,23 +1871,6 @@ Git.prototype.env = function (name, value) {
    }
 
    return this;
-};
-
-/**
- * Sets the working directory of the subsequent commands.
- */
-Git.prototype.cwd = function (workingDirectory) {
-   const task = (typeof workingDirectory !== 'string')
-      ? configurationErrorTask('Git.cwd: workingDirectory must be supplied as a string')
-      : adhocExecTask(() => {
-         if (!folderExists(workingDirectory)) {
-            throw new Error(`Git.cwd: cannot change to non-directory "${ workingDirectory }"`);
-         }
-
-         return (this._executor.cwd = workingDirectory);
-      });
-
-   return this._runTask(task, trailingFunctionArgument(arguments) || NOOP);
 };
 
 /**
@@ -4466,7 +4447,10 @@ class GitExecutorChain {
         return this._executor.binary;
     }
     get cwd() {
-        return this._executor.cwd;
+        return this._cwd || this._executor.cwd;
+    }
+    set cwd(cwd) {
+        this._cwd = cwd;
     }
     get env() {
         return this._executor.env;
@@ -4521,7 +4505,7 @@ class GitExecutorChain {
     attemptEmptyTask(task, logger) {
         return __awaiter(this, void 0, void 0, function* () {
             logger(`empty task bypassing child process to call to task's parser`);
-            return task.parser();
+            return task.parser(this);
         });
     }
     handleTaskData(task, args, result, logger) {
@@ -4926,6 +4910,7 @@ TasksPendingQueue.counter = 0;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SimpleGitApi = void 0;
 const task_callback_1 = __nccwpck_require__(8850);
+const change_working_directory_1 = __nccwpck_require__(4415);
 const push_1 = __nccwpck_require__(1435);
 const task_1 = __nccwpck_require__(2815);
 const utils_1 = __nccwpck_require__(847);
@@ -4947,6 +4932,16 @@ class SimpleGitApi {
     }
     add(files) {
         return this._runTask(task_1.straightThroughStringTask(['add', ...utils_1.asArray(files)]), utils_1.trailingFunctionArgument(arguments));
+    }
+    cwd(directory) {
+        const next = utils_1.trailingFunctionArgument(arguments);
+        if (typeof directory === 'string') {
+            return this._runTask(change_working_directory_1.changeWorkingDirectoryTask(directory, this._executor), next);
+        }
+        if (typeof (directory === null || directory === void 0 ? void 0 : directory.path) === 'string') {
+            return this._runTask(change_working_directory_1.changeWorkingDirectoryTask(directory.path, directory.root && this._executor || undefined), next);
+        }
+        return this._runTask(task_1.configurationErrorTask('Git.cwd: workingDirectory must be supplied as a string'), next);
     }
     push() {
         const task = push_1.pushTask({
@@ -5106,6 +5101,28 @@ function deleteBranchTask(branch, forceDelete = false) {
 }
 exports.deleteBranchTask = deleteBranchTask;
 //# sourceMappingURL=branch.js.map
+
+/***/ }),
+
+/***/ 4415:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.changeWorkingDirectoryTask = void 0;
+const utils_1 = __nccwpck_require__(847);
+const task_1 = __nccwpck_require__(2815);
+function changeWorkingDirectoryTask(directory, root) {
+    return task_1.adhocExecTask((instance) => {
+        if (!utils_1.folderExists(directory)) {
+            throw new Error(`Git.cwd: cannot change to non-directory "${directory}"`);
+        }
+        return ((root || instance).cwd = directory);
+    });
+}
+exports.changeWorkingDirectoryTask = changeWorkingDirectoryTask;
+//# sourceMappingURL=change-working-directory.js.map
 
 /***/ }),
 
@@ -5921,7 +5938,7 @@ exports.EMPTY_COMMANDS = [];
 function adhocExecTask(parser) {
     return {
         commands: exports.EMPTY_COMMANDS,
-        format: 'utf-8',
+        format: 'empty',
         parser,
     };
 }
@@ -5929,7 +5946,7 @@ exports.adhocExecTask = adhocExecTask;
 function configurationErrorTask(error) {
     return {
         commands: exports.EMPTY_COMMANDS,
-        format: 'utf-8',
+        format: 'empty',
         parser() {
             throw typeof error === 'string' ? new task_configuration_error_1.TaskConfigurationError(error) : error;
         }
@@ -5961,7 +5978,7 @@ function isBufferTask(task) {
 }
 exports.isBufferTask = isBufferTask;
 function isEmptyTask(task) {
-    return !task.commands.length;
+    return task.format === 'empty' || !task.commands.length;
 }
 exports.isEmptyTask = isEmptyTask;
 //# sourceMappingURL=task.js.map
