@@ -48,12 +48,17 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const simple_git_1 = __importDefault(__nccwpck_require__(1477));
 const url_1 = __nccwpck_require__(8835);
+const util = __importStar(__nccwpck_require__(1669));
 const workspacePath_1 = __importDefault(__nccwpck_require__(3948));
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 const TAG_REF_PREFIX = 'refs/tags/';
 const RESULT = {
     REMOTE_CHANGED: 'remote-changed',
     TAGGED_SUCCESSFULLY: 'tagged-successfully',
+};
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+__nccwpck_require__(8231).log = function log(...args) {
+    return process.stdout.write(`${util.format(...args)}\n`);
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 async function run() {
