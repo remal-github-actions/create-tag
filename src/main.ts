@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import simpleGit from 'simple-git'
 import {SimpleGit} from 'simple-git/promise'
 import {URL} from 'url'
+import * as util from 'util'
 import workspacePath from './internal/workspacePath'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -11,6 +12,12 @@ const TAG_REF_PREFIX = 'refs/tags/'
 const RESULT = {
     REMOTE_CHANGED: 'remote-changed',
     TAGGED_SUCCESSFULLY: 'tagged-successfully',
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+require('debug').log = function log(...args) {
+    return process.stdout.write(`${util.format(...args)}\n`)
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
