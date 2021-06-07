@@ -12,7 +12,7 @@ docs
 doc
 website
 images
-assets
+#assets
 
 # examples
 example
