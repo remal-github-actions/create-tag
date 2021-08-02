@@ -3572,7 +3572,6 @@ const {cleanWithOptionsTask, isCleanOptionsArray} = __nccwpck_require__(4386);
 const {commitTask} = __nccwpck_require__(5494);
 const {diffSummaryTask} = __nccwpck_require__(9241);
 const {fetchTask} = __nccwpck_require__(8823);
-const {logTask, parseLogOptions} = __nccwpck_require__(8627);
 const {moveTask} = __nccwpck_require__(6520);
 const {pullTask} = __nccwpck_require__(4636);
 const {pushTagsTask} = __nccwpck_require__(1435);
@@ -4213,38 +4212,6 @@ Git.prototype.exec = function (then) {
    };
 
    return this._runTask(task);
-};
-
-/**
- * Show commit logs from `HEAD` to the first commit.
- * If provided between `options.from` and `options.to` tags or branch.
- *
- * Additionally you can provide options.file, which is the path to a file in your repository. Then only this file will be considered.
- *
- * To use a custom splitter in the log format, set `options.splitter` to be the string the log should be split on.
- *
- * Options can also be supplied as a standard options object for adding custom properties supported by the git log command.
- * For any other set of options, supply options as an array of strings to be appended to the git log command.
- */
-Git.prototype.log = function (options) {
-   const next = trailingFunctionArgument(arguments);
-
-   if (filterString(arguments[0]) && filterString(arguments[1])) {
-      return this._runTask(
-         configurationErrorTask(`git.log(string, string) should be replaced with git.log({ from: string, to: string })`),
-         next
-      );
-   }
-
-   const parsedOptions = parseLogOptions(
-      trailingOptionsArgument(arguments) || {},
-      filterArray(options) && options || []
-   );
-
-   return this._runTask(
-      logTask(parsedOptions.splitter, parsedOptions.fields, parsedOptions.commands),
-      next,
-   )
 };
 
 /**
@@ -6564,6 +6531,7 @@ const change_working_directory_1 = __nccwpck_require__(4415);
 const config_1 = __nccwpck_require__(7597);
 const hash_object_1 = __nccwpck_require__(8199);
 const init_1 = __nccwpck_require__(6016);
+const log_1 = __nccwpck_require__(8627);
 const merge_1 = __nccwpck_require__(8829);
 const push_1 = __nccwpck_require__(1435);
 const status_1 = __nccwpck_require__(9197);
@@ -6632,7 +6600,7 @@ class SimpleGitApi {
     }
 }
 exports.SimpleGitApi = SimpleGitApi;
-Object.assign(SimpleGitApi.prototype, config_1.default());
+Object.assign(SimpleGitApi.prototype, config_1.default(), log_1.default());
 //# sourceMappingURL=simple-git-api.js.map
 
 /***/ }),
@@ -7055,11 +7023,11 @@ var GitConfigScope;
     GitConfigScope["local"] = "local";
     GitConfigScope["worktree"] = "worktree";
 })(GitConfigScope = exports.GitConfigScope || (exports.GitConfigScope = {}));
-function asConfigScope(scope) {
+function asConfigScope(scope, fallback) {
     if (typeof scope === 'string' && GitConfigScope.hasOwnProperty(scope)) {
         return scope;
     }
-    return GitConfigScope.local;
+    return fallback;
 }
 function addConfigTask(key, value, append, scope) {
     const commands = ['config', `--${scope}`];
@@ -7075,9 +7043,13 @@ function addConfigTask(key, value, append, scope) {
         }
     };
 }
-function listConfigTask() {
+function listConfigTask(scope) {
+    const commands = ['config', '--list', '--show-origin', '--null'];
+    if (scope) {
+        commands.push(`--${scope}`);
+    }
     return {
-        commands: ['config', '--list', '--show-origin', '--null'],
+        commands,
         format: 'utf-8',
         parser(text) {
             return ConfigList_1.configListParser(text);
@@ -7087,10 +7059,10 @@ function listConfigTask() {
 function default_1() {
     return {
         addConfig(key, value, ...rest) {
-            return this._runTask(addConfigTask(key, value, rest[0] === true, asConfigScope(rest[1])), utils_1.trailingFunctionArgument(arguments));
+            return this._runTask(addConfigTask(key, value, rest[0] === true, asConfigScope(rest[1], GitConfigScope.local)), utils_1.trailingFunctionArgument(arguments));
         },
-        listConfig() {
-            return this._runTask(listConfigTask(), utils_1.trailingFunctionArgument(arguments));
+        listConfig(...rest) {
+            return this._runTask(listConfigTask(asConfigScope(rest[0], undefined)), utils_1.trailingFunctionArgument(arguments));
         },
     };
 }
@@ -7207,6 +7179,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.logTask = exports.parseLogOptions = void 0;
 const parse_list_log_summary_1 = __nccwpck_require__(9729);
 const utils_1 = __nccwpck_require__(847);
+const task_1 = __nccwpck_require__(2815);
 var excludeOptions;
 (function (excludeOptions) {
     excludeOptions[excludeOptions["--pretty"] = 0] = "--pretty";
@@ -7289,6 +7262,25 @@ function logTask(splitter, fields, customArgs) {
     };
 }
 exports.logTask = logTask;
+function default_1() {
+    return {
+        log(...rest) {
+            const next = utils_1.trailingFunctionArgument(arguments);
+            const task = rejectDeprecatedSignatures(...rest) ||
+                createLogTask(parseLogOptions(utils_1.trailingOptionsArgument(arguments), utils_1.filterType(arguments[0], utils_1.filterArray)));
+            return this._runTask(task, next);
+        }
+    };
+    function createLogTask(options) {
+        return logTask(options.splitter, options.fields, options.commands);
+    }
+    function rejectDeprecatedSignatures(from, to) {
+        return (utils_1.filterString(from) &&
+            utils_1.filterString(to) &&
+            task_1.configurationErrorTask(`git.log(string, string) should be replaced with git.log({ from: string, to: string })`));
+    }
+}
+exports.default = default_1;
 //# sourceMappingURL=log.js.map
 
 /***/ }),
