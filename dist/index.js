@@ -5294,6 +5294,7 @@ function gitInstanceFactory(baseDir, options) {
     if (Array.isArray(config.config)) {
         plugins.add(plugins_1.commandConfigPrefixingPlugin(config.config));
     }
+    plugins.add(plugins_1.completionDetectionPlugin(config.completion));
     config.progress && plugins.add(plugins_1.progressMonitorPlugin(config.progress));
     config.timeout && plugins.add(plugins_1.timeoutPlugin(config.timeout));
     config.spawnOptions && plugins.add(plugins_1.spawnOptionsPlugin(config.spawnOptions));
@@ -5988,6 +5989,93 @@ exports.commandConfigPrefixingPlugin = commandConfigPrefixingPlugin;
 
 /***/ }),
 
+/***/ 179:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.completionDetectionPlugin = void 0;
+const promise_deferred_1 = __nccwpck_require__(9819);
+const utils_1 = __nccwpck_require__(847);
+const never = promise_deferred_1.default().promise;
+function completionDetectionPlugin({ onClose = true, onExit = 50 } = {}) {
+    function createEvents() {
+        let exitCode = -1;
+        const events = {
+            close: promise_deferred_1.default(),
+            closeTimeout: promise_deferred_1.default(),
+            exit: promise_deferred_1.default(),
+            exitTimeout: promise_deferred_1.default(),
+        };
+        const result = Promise.race([
+            onClose === false ? never : events.closeTimeout.promise,
+            onExit === false ? never : events.exitTimeout.promise,
+        ]);
+        configureTimeout(onClose, events.close, events.closeTimeout);
+        configureTimeout(onExit, events.exit, events.exitTimeout);
+        return {
+            close(code) {
+                exitCode = code;
+                events.close.done();
+            },
+            exit(code) {
+                exitCode = code;
+                events.exit.done();
+            },
+            get exitCode() {
+                return exitCode;
+            },
+            result,
+        };
+    }
+    function configureTimeout(flag, event, timeout) {
+        if (flag === false) {
+            return;
+        }
+        (flag === true ? event.promise : event.promise.then(() => utils_1.delay(flag))).then(timeout.done);
+    }
+    return {
+        type: 'spawn.after',
+        action(_data, { spawned, close }) {
+            var _a, _b;
+            return __awaiter(this, void 0, void 0, function* () {
+                const events = createEvents();
+                let deferClose = true;
+                let quickClose = () => void (deferClose = false);
+                (_a = spawned.stdout) === null || _a === void 0 ? void 0 : _a.on('data', quickClose);
+                (_b = spawned.stderr) === null || _b === void 0 ? void 0 : _b.on('data', quickClose);
+                spawned.on('error', quickClose);
+                spawned.on('close', (code) => events.close(code));
+                spawned.on('exit', (code) => events.exit(code));
+                try {
+                    yield events.result;
+                    if (deferClose) {
+                        yield utils_1.delay(50);
+                    }
+                    close(events.exitCode);
+                }
+                catch (err) {
+                    close(events.exitCode, err);
+                }
+            });
+        }
+    };
+}
+exports.completionDetectionPlugin = completionDetectionPlugin;
+//# sourceMappingURL=completion-detection.plugin.js.map
+
+/***/ }),
+
 /***/ 6713:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -6051,6 +6139,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__nccwpck_require__(2581), exports);
+__exportStar(__nccwpck_require__(179), exports);
 __exportStar(__nccwpck_require__(6713), exports);
 __exportStar(__nccwpck_require__(5067), exports);
 __exportStar(__nccwpck_require__(1738), exports);
@@ -6115,7 +6204,7 @@ function progressMonitorPlugin(progress) {
                 return;
             }
             (_a = context.spawned.stderr) === null || _a === void 0 ? void 0 : _a.on('data', (chunk) => {
-                const message = /^([a-zA-Z ]+):\s*(\d+)% \((\d+)\/(\d+)\)/.exec(chunk.toString('utf8'));
+                const message = /^([\s\S]+?):\s*(\d+)% \((\d+)\/(\d+)\)/.exec(chunk.toString('utf8'));
                 if (!message) {
                     return;
                 }
@@ -6356,7 +6445,7 @@ exports.cleanSummaryParser = cleanSummaryParser;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.configListParser = exports.ConfigList = void 0;
+exports.configGetParser = exports.configListParser = exports.ConfigList = void 0;
 const utils_1 = __nccwpck_require__(847);
 class ConfigList {
     constructor() {
@@ -6396,17 +6485,51 @@ class ConfigList {
 exports.ConfigList = ConfigList;
 function configListParser(text) {
     const config = new ConfigList();
-    const lines = text.split('\0');
-    for (let i = 0, max = lines.length - 1; i < max;) {
-        const file = configFilePath(lines[i++]);
-        const [key, value] = utils_1.splitOn(lines[i++], '\n');
-        config.addValue(file, key, value);
+    for (const item of configParser(text)) {
+        config.addValue(item.file, String(item.key), item.value);
     }
     return config;
 }
 exports.configListParser = configListParser;
+function configGetParser(text, key) {
+    let value = null;
+    const values = [];
+    const scopes = new Map();
+    for (const item of configParser(text, key)) {
+        if (item.key !== key) {
+            continue;
+        }
+        values.push(value = item.value);
+        if (!scopes.has(item.file)) {
+            scopes.set(item.file, []);
+        }
+        scopes.get(item.file).push(value);
+    }
+    return {
+        key,
+        paths: Array.from(scopes.keys()),
+        scopes,
+        value,
+        values
+    };
+}
+exports.configGetParser = configGetParser;
 function configFilePath(filePath) {
     return filePath.replace(/^(file):/, '');
+}
+function* configParser(text, requestedKey = null) {
+    const lines = text.split('\0');
+    for (let i = 0, max = lines.length - 1; i < max;) {
+        const file = configFilePath(lines[i++]);
+        let value = lines[i++];
+        let key = requestedKey;
+        if (value.includes('\n')) {
+            const line = utils_1.splitOn(value, '\n');
+            key = line[0];
+            value = line[1];
+        }
+        yield { file, key, value };
+    }
 }
 //# sourceMappingURL=ConfigList.js.map
 
@@ -6955,40 +7078,26 @@ class GitExecutorChain {
             return new Promise((done) => {
                 const stdOut = [];
                 const stdErr = [];
-                let attempted = false;
                 let rejection;
-                function attemptClose(exitCode, event = 'retry') {
-                    // closing when there is content, terminate immediately
-                    if (attempted || stdErr.length || stdOut.length) {
-                        logger.info(`exitCode=%s event=%s rejection=%o`, exitCode, event, rejection);
-                        done({
-                            stdOut,
-                            stdErr,
-                            exitCode,
-                            rejection,
-                        });
-                        attempted = true;
-                    }
-                    // first attempt at closing but no content yet, wait briefly for the close/exit that may follow
-                    if (!attempted) {
-                        attempted = true;
-                        setTimeout(() => attemptClose(exitCode, 'deferred'), 50);
-                        logger('received %s event before content on stdOut/stdErr', event);
-                    }
-                }
                 logger.info(`%s %o`, command, args);
                 logger('%O', spawnOptions);
                 const spawned = child_process_1.spawn(command, args, spawnOptions);
                 spawned.stdout.on('data', onDataReceived(stdOut, 'stdOut', logger, outputLogger.step('stdOut')));
                 spawned.stderr.on('data', onDataReceived(stdErr, 'stdErr', logger, outputLogger.step('stdErr')));
                 spawned.on('error', onErrorReceived(stdErr, logger));
-                spawned.on('close', (code) => attemptClose(code, 'close'));
-                spawned.on('exit', (code) => attemptClose(code, 'exit'));
                 if (outputHandler) {
                     logger(`Passing child process stdOut/stdErr to custom outputHandler`);
                     outputHandler(command, spawned.stdout, spawned.stderr, [...args]);
                 }
-                this._plugins.exec('spawn.after', undefined, Object.assign(Object.assign({}, pluginContext(task, args)), { spawned, kill(reason) {
+                this._plugins.exec('spawn.after', undefined, Object.assign(Object.assign({}, pluginContext(task, args)), { spawned, close(exitCode, reason) {
+                        done({
+                            stdOut,
+                            stdErr,
+                            exitCode,
+                            rejection: rejection || reason,
+                        });
+                    },
+                    kill(reason) {
                         if (spawned.killed) {
                             return;
                         }
@@ -7418,10 +7527,7 @@ function taskCallback(task, response, callback = utils_1.NOOP) {
     };
     const onError = (err) => {
         if ((err === null || err === void 0 ? void 0 : err.task) === task) {
-            if (err instanceof git_response_error_1.GitResponseError) {
-                return callback(addDeprecationNoticeToError(err));
-            }
-            callback(err);
+            callback((err instanceof git_response_error_1.GitResponseError) ? addDeprecationNoticeToError(err) : err, undefined);
         }
     };
     response.then(onSuccess, onError);
@@ -7841,6 +7947,19 @@ function addConfigTask(key, value, append, scope) {
         }
     };
 }
+function getConfigTask(key, scope) {
+    const commands = ['config', '--null', '--show-origin', '--get-all', key];
+    if (scope) {
+        commands.splice(1, 0, `--${scope}`);
+    }
+    return {
+        commands,
+        format: 'utf-8',
+        parser(text) {
+            return ConfigList_1.configGetParser(text, key);
+        }
+    };
+}
 function listConfigTask(scope) {
     const commands = ['config', '--list', '--show-origin', '--null'];
     if (scope) {
@@ -7858,6 +7977,9 @@ function default_1() {
     return {
         addConfig(key, value, ...rest) {
             return this._runTask(addConfigTask(key, value, rest[0] === true, asConfigScope(rest[1], GitConfigScope.local)), utils_1.trailingFunctionArgument(arguments));
+        },
+        getConfig(key, scope) {
+            return this._runTask(getConfigTask(key, asConfigScope(scope, undefined)), utils_1.trailingFunctionArgument(arguments));
         },
         listConfig(...rest) {
             return this._runTask(listConfigTask(asConfigScope(rest[0], undefined)), utils_1.trailingFunctionArgument(arguments));
@@ -7990,8 +8112,9 @@ var excludeOptions;
     excludeOptions[excludeOptions["to"] = 7] = "to";
     excludeOptions[excludeOptions["splitter"] = 8] = "splitter";
     excludeOptions[excludeOptions["symmetric"] = 9] = "symmetric";
-    excludeOptions[excludeOptions["multiLine"] = 10] = "multiLine";
-    excludeOptions[excludeOptions["strictDate"] = 11] = "strictDate";
+    excludeOptions[excludeOptions["mailMap"] = 10] = "mailMap";
+    excludeOptions[excludeOptions["multiLine"] = 11] = "multiLine";
+    excludeOptions[excludeOptions["strictDate"] = 12] = "strictDate";
 })(excludeOptions || (excludeOptions = {}));
 function prettyFormat(format, splitter) {
     const fields = [];
@@ -8021,8 +8144,8 @@ function parseLogOptions(opt = {}, customArgs = []) {
         message: '%s',
         refs: '%D',
         body: opt.multiLine ? '%B' : '%b',
-        author_name: '%aN',
-        author_email: '%ae'
+        author_name: opt.mailMap !== false ? '%aN' : '%an',
+        author_email: opt.mailMap !== false ? '%aE' : '%ae'
     };
     const [fields, formatStr] = prettyFormat(format, splitter);
     const suffix = [];
@@ -8787,7 +8910,7 @@ exports.parseStringResponse = parseStringResponse;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pick = exports.bufferToString = exports.prefixedArray = exports.asNumber = exports.asStringArray = exports.asArray = exports.objectToString = exports.remove = exports.including = exports.append = exports.folderExists = exports.forEachLineWithContent = exports.toLinesWithContent = exports.last = exports.first = exports.splitOn = exports.isUserFunction = exports.asFunction = exports.NOOP = void 0;
+exports.delay = exports.pick = exports.bufferToString = exports.prefixedArray = exports.asNumber = exports.asStringArray = exports.asArray = exports.objectToString = exports.remove = exports.including = exports.append = exports.folderExists = exports.forEachLineWithContent = exports.toLinesWithContent = exports.last = exports.first = exports.splitOn = exports.isUserFunction = exports.asFunction = exports.NOOP = void 0;
 const file_exists_1 = __nccwpck_require__(4751);
 const NOOP = () => {
 };
@@ -8925,6 +9048,10 @@ function pick(source, properties) {
     return Object.assign({}, ...properties.map((property) => property in source ? { [property]: source[property] } : {}));
 }
 exports.pick = pick;
+function delay(duration = 0) {
+    return new Promise(done => setTimeout(done, duration));
+}
+exports.delay = delay;
 //# sourceMappingURL=util.js.map
 
 /***/ }),
