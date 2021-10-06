@@ -15,7 +15,7 @@
     "build": "npm run dist && npm run test"
   },
   "dependencies": {
-    "@actions/core": "1.5.0",
+    "@actions/core": "1.6.0",
     "debug": "4.3.2",
     "simple-git": "2.42.0"
   },
