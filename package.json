@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@actions/core": "1.6.0",
-    "debug": "4.3.2",
+    "debug": "4.3.3",
     "simple-git": "2.47.0"
   },
   "devDependencies": {
