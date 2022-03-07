@@ -3683,7 +3683,7 @@ function last(input, offset = 0) {
 function isArrayLike(input) {
   return !!(input && typeof input.length === "number");
 }
-function toLinesWithContent(input, trimmed2 = true, separator = "\n") {
+function toLinesWithContent(input = "", trimmed2 = true, separator = "\n") {
   return input.split(separator).reduce((output, line) => {
     const lineContent = trimmed2 ? line.trim() : line;
     if (lineContent) {
@@ -5592,7 +5592,7 @@ var init_MergeSummary = __esm({
 });
 
 // src/lib/responses/PullSummary.ts
-var PullSummary;
+var PullSummary, PullFailedSummary;
 var init_PullSummary = __esm({
   "src/lib/responses/PullSummary.ts"() {
     PullSummary = class {
@@ -5610,6 +5610,23 @@ var init_PullSummary = __esm({
           deletions: 0,
           insertions: 0
         };
+      }
+    };
+    PullFailedSummary = class {
+      constructor() {
+        this.remote = "";
+        this.hash = {
+          local: "",
+          remote: ""
+        };
+        this.branch = {
+          local: "",
+          remote: ""
+        };
+        this.message = "";
+      }
+      toString() {
+        return this.message;
       }
     };
   }
@@ -5694,7 +5711,11 @@ var init_parse_remote_messages = __esm({
 });
 
 // src/lib/parsers/parse-pull.ts
-var FILE_UPDATE_REGEX, SUMMARY_REGEX, ACTION_REGEX, parsers2, parsePullDetail, parsePullResult;
+function parsePullErrorResult(stdOut, stdErr) {
+  const pullError = parseStringResponse(new PullFailedSummary(), errorParsers, stdOut, stdErr);
+  return pullError.message && pullError;
+}
+var FILE_UPDATE_REGEX, SUMMARY_REGEX, ACTION_REGEX, parsers2, errorParsers, parsePullDetail, parsePullResult;
 var init_parse_pull = __esm({
   "src/lib/parsers/parse-pull.ts"() {
     init_PullSummary();
@@ -5725,6 +5746,16 @@ var init_parse_pull = __esm({
       new LineParser(ACTION_REGEX, (result, [action, file]) => {
         append(result.files, file);
         append(action === "create" ? result.created : result.deleted, file);
+      })
+    ];
+    errorParsers = [
+      new LineParser(/^from\s(.+)$/i, (result, [remote]) => void (result.remote = remote)),
+      new LineParser(/^fatal:\s(.+)$/, (result, [message]) => void (result.message = message)),
+      new LineParser(/([a-z0-9]+)\.\.([a-z0-9]+)\s+(\S+)\s+->\s+(\S+)$/, (result, [hashLocal, hashRemote, branchLocal, branchRemote]) => {
+        result.branch.local = branchLocal;
+        result.hash.local = hashLocal;
+        result.branch.remote = branchRemote;
+        result.hash.remote = hashRemote;
       })
     ];
     parsePullDetail = (stdOut, stdErr) => {
@@ -6645,12 +6676,21 @@ function pullTask(remote, branch, customArgs) {
     format: "utf-8",
     parser(stdOut, stdErr) {
       return parsePullResult(stdOut, stdErr);
+    },
+    onError(result, _error, _done, fail) {
+      const pullError = parsePullErrorResult(bufferToString(result.stdOut), bufferToString(result.stdErr));
+      if (pullError) {
+        return fail(new GitResponseError(pullError));
+      }
+      fail(_error);
     }
   };
 }
 var init_pull = __esm({
   "src/lib/tasks/pull.ts"() {
+    init_git_response_error();
     init_parse_pull();
+    init_utils();
   }
 });
 
