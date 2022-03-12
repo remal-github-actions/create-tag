@@ -6612,10 +6612,17 @@ var fetch_exports = {};
 __export(fetch_exports, {
   fetchTask: () => fetchTask
 });
+function disallowedCommand(command) {
+  return /^--upload-pack(=|$)/.test(command);
+}
 function fetchTask(remote, branch, customArgs) {
   const commands = ["fetch", ...customArgs];
   if (remote && branch) {
     commands.push(remote, branch);
+  }
+  const banned = commands.find(disallowedCommand);
+  if (banned) {
+    return configurationErrorTask(`git.fetch: potential exploit argument blocked.`);
   }
   return {
     commands,
@@ -6626,6 +6633,7 @@ function fetchTask(remote, branch, customArgs) {
 var init_fetch = __esm({
   "src/lib/tasks/fetch.ts"() {
     init_parse_fetch();
+    init_task();
   }
 });
 
