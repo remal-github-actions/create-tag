@@ -4353,6 +4353,7 @@ function createInstanceConfig(...options) {
   const baseDir = process.cwd();
   const config = Object.assign(__spreadValues({ baseDir }, defaultOptions), ...options.filter((o) => typeof o === "object" && o));
   config.baseDir = config.baseDir || baseDir;
+  config.trimmed = config.trimmed === true;
   return config;
 }
 var defaultOptions;
@@ -4361,7 +4362,8 @@ var init_simple_git_options = __esm({
     defaultOptions = {
       binary: "git",
       maxConcurrentProcesses: 5,
-      config: []
+      config: [],
+      trimmed: false
     };
   }
 });
@@ -7569,6 +7571,7 @@ var require_git = __commonJS({
     var { straightThroughBufferTask: straightThroughBufferTask2, straightThroughStringTask: straightThroughStringTask2 } = (init_task(), __toCommonJS(task_exports));
     function Git2(options, plugins) {
       this._executor = new GitExecutor2(options.binary, options.baseDir, new Scheduler2(options.maxConcurrentProcesses), plugins);
+      this._trimmed = options.trimmed;
     }
     (Git2.prototype = Object.create(SimpleGitApi2.prototype)).constructor = Git2;
     Git2.prototype.customBinary = function(command) {
@@ -7678,7 +7681,7 @@ var require_git = __commonJS({
       if (!command.length) {
         return this._runTask(configurationErrorTask2("Raw: must supply one or more command to execute"), next);
       }
-      return this._runTask(straightThroughStringTask2(command), next);
+      return this._runTask(straightThroughStringTask2(command, this._trimmed), next);
     };
     Git2.prototype.submoduleAdd = function(repo, path, then) {
       return this._runTask(addSubModuleTask2(repo, path), trailingFunctionArgument2(arguments));
