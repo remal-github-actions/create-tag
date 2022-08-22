@@ -6141,9 +6141,9 @@ function parseLogOptions(opt = {}, customArgs = []) {
   if (maxCount) {
     command.push(`--max-count=${maxCount}`);
   }
-  if (opt.from && opt.to) {
+  if (opt.from || opt.to) {
     const rangeOperator = opt.symmetric !== false ? "..." : "..";
-    suffix.push(`${opt.from}${rangeOperator}${opt.to}`);
+    suffix.push(`${opt.from || ""}${rangeOperator}${opt.to || ""}`);
   }
   if (filterString(opt.file)) {
     suffix.push("--follow", opt.file);
