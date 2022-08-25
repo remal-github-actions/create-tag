@@ -53,6 +53,10 @@ jobs:
         npm run build
 
 
+    # $$$sync-with-template-modifiable: validation $$$
+    # $$$sync-with-template-modifiable-end$$$
+
+
     - name: Push back
       env:
         PUSH_BACK_TOKEN: ${{ secrets.PUSH_BACK_TOKEN }}
