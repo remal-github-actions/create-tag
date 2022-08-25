@@ -3,7 +3,7 @@
   "name": "create-tag",
   "version": "1.0.0",
   "engines": {
-    "node": ">=12"
+    "node": ">=16"
   },
   "main": "dist/main.js",
   "scripts": {
