@@ -184,7 +184,7 @@ async function run() {
             }
         }
         catch (error) {
-            core.setFailed(error);
+            core.setFailed(error instanceof Error ? error : error.toString());
         }
         finally {
             await core.group(`Removing '${pushRemoteName}' remote`, async () => {
@@ -199,7 +199,7 @@ async function run() {
         }
     }
     catch (error) {
-        core.setFailed(error);
+        core.setFailed(error instanceof Error ? error : error.toString());
     }
 }
 //noinspection JSIgnoredPromiseFromCall
