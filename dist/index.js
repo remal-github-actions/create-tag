@@ -24,7 +24,11 @@ module.exports = workspacePath;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -74,7 +78,7 @@ async function run() {
         if (((_a = process.env.ACTIONS_STEP_DEBUG) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true') {
             (__nccwpck_require__(8237).enable)('simple-git');
         }
-        const git = simple_git_1.default(workspacePath_1.default);
+        const git = (0, simple_git_1.default)(workspacePath_1.default);
         const currentBranch = await getCurrentBranchName(git);
         const remoteBranch = (function () {
             const remoteBranchInput = core.getInput('remoteBranch');
