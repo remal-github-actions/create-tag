@@ -2,17 +2,18 @@
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 3948:
-/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 let workspacePath = process.env['GITHUB_WORKSPACE'] || process.cwd();
 workspacePath = path_1.default.resolve(workspacePath);
-module.exports = workspacePath;
+exports["default"] = workspacePath;
 
 
 /***/ }),
