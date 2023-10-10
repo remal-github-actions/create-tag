@@ -1,6 +1,4 @@
 import path from 'path'
 
-let workspacePath: string = process.env['GITHUB_WORKSPACE'] || process.cwd()
-workspacePath = path.resolve(workspacePath)
-
+const workspacePath = path.resolve(process.env.GITHUB_WORKSPACE ?? process.cwd())
 export default workspacePath
