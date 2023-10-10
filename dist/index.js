@@ -11,8 +11,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path_1 = __importDefault(__nccwpck_require__(1017));
-let workspacePath = process.env['GITHUB_WORKSPACE'] || process.cwd();
-workspacePath = path_1.default.resolve(workspacePath);
+const workspacePath = path_1.default.resolve(process.env.GITHUB_WORKSPACE ?? process.cwd());
 exports["default"] = workspacePath;
 
 
@@ -51,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const simple_git_1 = __importDefault(__nccwpck_require__(9103));
+const simple_git_1 = __nccwpck_require__(9103);
 const url_1 = __nccwpck_require__(7310);
 const util = __importStar(__nccwpck_require__(3837));
 const workspacePath_1 = __importDefault(__nccwpck_require__(3948));
@@ -78,7 +77,7 @@ async function run() {
         if (core.isDebug()) {
             (__nccwpck_require__(8237).enable)('simple-git');
         }
-        const git = (0, simple_git_1.default)(workspacePath_1.default);
+        const git = (0, simple_git_1.simpleGit)(workspacePath_1.default);
         const currentBranch = await getCurrentBranchName(git);
         const remoteBranch = (function () {
             const remoteBranchInput = core.getInput('remoteBranch');
