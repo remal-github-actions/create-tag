@@ -205,16 +205,6 @@ async function getCurrentBranchName(git: SimpleGit): Promise<string> {
         .then(text => text.trim())
 }
 
-async function getRemoteTags(git: SimpleGit, remoteName: string): Promise<string[]> {
-    return git.listRemote(['--tags', remoteName])
-        .then(text => text.trim())
-        .then(text => text.split('\n')
-            .map(line => line.replace(/^[0-9a-f]\s+/, ''))
-            .filter(ref => ref.startsWith(TAG_REF_PREFIX))
-            .map(ref => ref.substr(TAG_REF_PREFIX.length))
-        )
-}
-
 async function getLatestCommitSha(git: SimpleGit, remoteName: string, remoteBranch: string): Promise<string> {
     return git.listRemote([remoteName, `refs/heads/${remoteBranch}`])
         .then(text => text.trim())
