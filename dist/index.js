@@ -221,14 +221,6 @@ async function getCurrentBranchName(git) {
     return git.raw('rev-parse', '--abbrev-ref', 'HEAD')
         .then(text => text.trim());
 }
-async function getRemoteTags(git, remoteName) {
-    return git.listRemote(['--tags', remoteName])
-        .then(text => text.trim())
-        .then(text => text.split('\n')
-        .map(line => line.replace(/^[0-9a-f]\s+/, ''))
-        .filter(ref => ref.startsWith(TAG_REF_PREFIX))
-        .map(ref => ref.substr(TAG_REF_PREFIX.length)));
-}
 async function getLatestCommitSha(git, remoteName, remoteBranch) {
     return git.listRemote([remoteName, `refs/heads/${remoteBranch}`])
         .then(text => text.trim())
