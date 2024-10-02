@@ -53,17 +53,12 @@ const core = __importStar(__nccwpck_require__(7484));
 const debug = __importStar(__nccwpck_require__(2830));
 const simple_git_1 = __nccwpck_require__(9065);
 const url_1 = __nccwpck_require__(7016);
-const util = __importStar(__nccwpck_require__(9023));
 const workspacePath_1 = __importDefault(__nccwpck_require__(5111));
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 const TAG_REF_PREFIX = 'refs/tags/';
 const RESULT = {
     REMOTE_CHANGED: 'remote-changed',
     TAGGED_SUCCESSFULLY: 'tagged-successfully',
-};
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-debug.log = function log(...args) {
-    return process.stdout.write(`${util.format(...args)}\n`);
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 async function run() {
