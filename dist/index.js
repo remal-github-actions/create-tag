@@ -50,6 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
+const debug = __importStar(__nccwpck_require__(2830));
 const simple_git_1 = __nccwpck_require__(9065);
 const url_1 = __nccwpck_require__(7016);
 const util = __importStar(__nccwpck_require__(9023));
@@ -61,7 +62,7 @@ const RESULT = {
     TAGGED_SUCCESSFULLY: 'tagged-successfully',
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-(__nccwpck_require__(2830).log) = function log(...args) {
+debug.log = function log(...args) {
     return process.stdout.write(`${util.format(...args)}\n`);
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -75,7 +76,7 @@ async function run() {
         core.setSecret(githubToken);
         const tagName = core.getInput('tagName', { required: true });
         if (core.isDebug()) {
-            (__nccwpck_require__(2830).enable)('simple-git');
+            debug.enable('simple-git');
         }
         const git = (0, simple_git_1.simpleGit)(workspacePath_1.default);
         const currentBranch = await getCurrentBranchName(git);

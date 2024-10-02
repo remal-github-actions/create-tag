@@ -8,7 +8,7 @@
   "packageManager": "yarn@4.5.0",
   "main": "dist/main.js",
   "scripts": {
-    "lint": "eslint --fix 'src/**/*'",
+    "lint": "eslint --fix src/**/*",
     "test": "jest --passWithNoTests",
     "tsconfig-generate-app": "node tsconfig-generate-app",
     "compile": "npm run lint && rimraf --glob build && node tsconfig-generate-app && tsc -project tsconfig.app.json --rootDir src --outDir build",
@@ -25,8 +25,6 @@
     "@types/jest": "29.5.13",
     "@types/node": "20.16.10",
     "@types/semver": "^7",
-    "@typescript-eslint/eslint-plugin": "7.18.0",
-    "@typescript-eslint/parser": "7.18.0",
     "@vercel/ncc": "0.38.2",
     "eslint": "8.57.1",
     "eslint-config-prettier": "9.1.0",
@@ -39,6 +37,7 @@
     "rimraf": "6.0.1",
     "semver": "^7",
     "ts-jest": "29.2.5",
-    "typescript": "5.6.2"
+    "typescript": "5.6.2",
+    "typescript-eslint": "8.8.0"
   }
 }

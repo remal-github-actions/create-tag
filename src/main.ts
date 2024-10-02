@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
+import * as debug from 'debug'
 import { simpleGit } from 'simple-git'
-import {SimpleGit} from 'simple-git/promise'
-import {URL} from 'url'
-import * as util from 'util'
+import { SimpleGit } from 'simple-git/promise'
+import { URL } from 'url'
 import workspacePath from './internal/workspacePath'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -16,12 +16,6 @@ const RESULT = {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-require('debug').log = function log(...args) {
-    return process.stdout.write(`${util.format(...args)}\n`)
-}
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
 async function run(): Promise<void> {
     try {
         const repositoryFullName = process.env.GITHUB_REPOSITORY
@@ -29,18 +23,18 @@ async function run(): Promise<void> {
             throw new Error('GITHUB_REPOSITORY not defined')
         }
 
-        const githubToken = core.getInput('githubToken', {required: true})
+        const githubToken = core.getInput('githubToken', { required: true })
         core.setSecret(githubToken)
 
-        const tagName = core.getInput('tagName', {required: true})
+        const tagName = core.getInput('tagName', { required: true })
 
         if (core.isDebug()) {
-            require('debug').enable('simple-git')
+            debug.enable('simple-git')
         }
         const git = simpleGit(workspacePath)
 
         const currentBranch = await getCurrentBranchName(git)
-        const remoteBranch: string | undefined = (function () {
+        const remoteBranch: string | undefined = (function() {
             const remoteBranchInput = core.getInput('remoteBranch')
             if (remoteBranchInput) {
                 return remoteBranchInput
@@ -82,7 +76,7 @@ async function run(): Promise<void> {
             const serverUrl = new URL(
                 process.env['GITHUB_SERVER_URL']
                 || process.env['GITHUB_URL']
-                || 'https://github.com'
+                || 'https://github.com',
             )
             core.debug(`Server URL: ${serverUrl}`)
             const remoteUrl = new URL(serverUrl.toString())
@@ -111,7 +105,7 @@ async function run(): Promise<void> {
                 core.debug('Adding remote')
                 await git.addRemote(
                     pushRemoteName,
-                    remoteUrl.toString()
+                    remoteUrl.toString(),
                 )
                 core.info(`Remote added: ${remoteUrl.toString()}`)
 
@@ -155,7 +149,7 @@ async function run(): Promise<void> {
                     }
 
                     return false
-                }
+                },
             )
             if (isRemoteChanged) {
                 core.warning(`Remote repository branch '${remoteBranch}' has been changed, skipping tag creation`)
