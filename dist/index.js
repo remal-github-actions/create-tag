@@ -6536,63 +6536,63 @@ exports.debug = debug; // for test
 /***/ 2613:
 /***/ ((module) => {
 
-module.exports = require("assert");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("assert");
 
 /***/ }),
 
 /***/ 5317:
 /***/ ((module) => {
 
-module.exports = require("child_process");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("child_process");
 
 /***/ }),
 
 /***/ 4434:
 /***/ ((module) => {
 
-module.exports = require("events");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("events");
 
 /***/ }),
 
 /***/ 9896:
 /***/ ((module) => {
 
-module.exports = require("fs");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("fs");
 
 /***/ }),
 
 /***/ 8611:
 /***/ ((module) => {
 
-module.exports = require("http");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("http");
 
 /***/ }),
 
 /***/ 5692:
 /***/ ((module) => {
 
-module.exports = require("https");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("https");
 
 /***/ }),
 
 /***/ 9278:
 /***/ ((module) => {
 
-module.exports = require("net");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("net");
 
 /***/ }),
 
 /***/ 857:
 /***/ ((module) => {
 
-module.exports = require("os");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("os");
 
 /***/ }),
 
 /***/ 6928:
 /***/ ((module) => {
 
-module.exports = require("path");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 
 /***/ }),
 
@@ -6613,21 +6613,21 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("timers");
 /***/ 4756:
 /***/ ((module) => {
 
-module.exports = require("tls");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("tls");
 
 /***/ }),
 
 /***/ 2018:
 /***/ ((module) => {
 
-module.exports = require("tty");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("tty");
 
 /***/ }),
 
 /***/ 9023:
 /***/ ((module) => {
 
-module.exports = require("util");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
 
 /***/ })
 
@@ -6684,7 +6684,7 @@ var external_child_process_ = __nccwpck_require__(5317);
 // EXTERNAL MODULE: ./node_modules/@kwsites/promise-deferred/dist/index.js
 var promise_deferred_dist = __nccwpck_require__(9997);
 ;// CONCATENATED MODULE: external "node:events"
-const external_node_events_namespaceObject = require("node:events");
+const external_node_events_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:events");
 ;// CONCATENATED MODULE: ./node_modules/simple-git/dist/esm/index.js
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -11484,7 +11484,7 @@ var esm_default = (/* unused pure expression or super */ null && (gitInstanceFac
 //# sourceMappingURL=index.js.map
 
 ;// CONCATENATED MODULE: external "url"
-const external_url_namespaceObject = require("url");
+const external_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(6928);
 ;// CONCATENATED MODULE: ./build/internal/workspacePath.js
