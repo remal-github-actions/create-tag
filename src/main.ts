@@ -1,9 +1,8 @@
 import * as core from '@actions/core'
 import * as debug from 'debug'
-import { simpleGit } from 'simple-git'
-import { SimpleGit } from 'simple-git/promise'
+import { simpleGit, SimpleGit } from 'simple-git'
 import { URL } from 'url'
-import workspacePath from './internal/workspacePath'
+import workspacePath from './internal/workspacePath.js'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
