@@ -2964,7 +2964,7 @@ __metadata:
     "@vercel/ncc": "npm:0.38.3"
     debug: "npm:4.4.0"
     eslint: "npm:8.57.1"
-    eslint-config-prettier: "npm:10.0.3"
+    eslint-config-prettier: "npm:10.1.0"
     eslint-import-resolver-typescript: "npm:3.8.3"
     eslint-plugin-github: "npm:5.1.8"
     eslint-plugin-import: "npm:2.31.0"
@@ -3801,14 +3801,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:10.0.3":
-  version: 10.0.3
-  resolution: "eslint-config-prettier@npm:10.0.3"
+"eslint-config-prettier@npm:10.1.0":
+  version: 10.1.0
+  resolution: "eslint-config-prettier@npm:10.1.0"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
-    eslint-config-prettier: build/bin/cli.js
-  checksum: 10c0/ae1361d2cedc2a754a562288972693f4fa40d5148b218207474662e44eeb1a3b623b6f9c1783a441632609f2f7f63a570f0ba119792419e39adcc2720801189c
+    eslint-config-prettier: bin/cli.js
+  checksum: 10c0/1324357287a9ac2ea5601db57eeb4a23a905d5f868182f9f202b5b96450f1309ca83938e07afb7b97ea2c95a414cdc99d03a5512a3102a7cee9913970eb6ba98
   languageName: node
   linkType: hard
 
