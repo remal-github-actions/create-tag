@@ -9,6 +9,7 @@
     "noImplicitAny": false,
     "strict": true,
     "strictNullChecks": true,
+    "isolatedModules": true,
     "types": [
       "node",
       "jest"
