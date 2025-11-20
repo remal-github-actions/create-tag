@@ -21,7 +21,7 @@
     "simple-git": "3.30.0"
   },
   "devDependencies": {
-    "@tsconfig/node20": "20.1.6",
+    "@tsconfig/node20": "20.1.7",
     "@types/jest": "30.0.0",
     "@types/node": "20.19.25",
     "@types/semver": "^7",
