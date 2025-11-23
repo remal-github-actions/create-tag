@@ -45,7 +45,7 @@ jobs:
 
 
     - name: Get version
-      id: version
+      id: get-version
       run: |
         VERSION=$(yq '.version' action.yml)
         echo "version=$VERSION" | tee -a $GITHUB_OUTPUT
