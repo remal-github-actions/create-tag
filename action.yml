@@ -1,0 +1,25 @@
+name: Template action
+description: Template action
+version: '1'
+
+inputs:
+  dryRun:
+    required: true
+    default: 'false'
+    description: Set to 'true' to enable dry run
+  githubToken:
+    required: true
+    description: GitHub access token
+
+outputs: { }
+
+runs:
+  using: composite
+  steps:
+  - name: Test Bash run
+    shell: bash
+    env:
+      INPUTS: ${{toJSON(inputs)}}
+    run: |
+      echo "This is a template action."
+      echo "Inputs: $INPUTS"

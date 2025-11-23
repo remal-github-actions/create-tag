@@ -1,0 +1,76 @@
+name: Bump repository activity
+
+on:
+  schedule:
+  - cron: '7 2 * * *' # sync-with-template: adjust
+  push:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/bump-repository-activity.yml'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        required: true
+        default: 'false'
+        description: Set to 'true' to enable dry run
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      maxInactivityDays:
+        required: true
+        default: 14
+        description: Max inactivity days. If there are no commits during this duration, a new commit will be created.
+        type: number
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bump-repository-activity-${{github.ref}}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PUSH_BACK_TOKEN: ${{secrets.PUSH_BACK_TOKEN || github.token}}
+
+jobs:
+  bump-repository-activity:
+    name: Bump repository activity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Get rate limits
+      uses: remal-github-actions/get-rate-limits@v1
+      id: rate-limits
+      with:
+        githubToken: ${{env.PUSH_BACK_TOKEN}}
+    - name: Make rate limits decision
+      id: decision
+      run: |
+        echo "Core rate limit usage: ${{steps.rate-limits.outputs.coreUsage}}"
+        if [ "${{steps.rate-limits.outputs.coreUsage < 75}}" == "true" ]; then
+          echo "Enough rate limits"
+          echo 'enough=true' >> $GITHUB_OUTPUT
+        else
+          echo "::warning::Not enough rate limits!"
+          if [ "${{github.event_name != 'schedule'}}" == "true" ]; then
+            echo "::warning::Executing anyway, as event is '${{github.event_name}}'"
+            echo 'enough=true' >> $GITHUB_OUTPUT
+          else
+            echo 'enough=false' >> $GITHUB_OUTPUT
+          fi
+        fi
+
+    - name: Bump repository activity
+      if: ${{fromJSON(steps.decision.outputs.enough) == true}}
+      uses: remal-github-actions/bump-repository-activity@v1
+      with:
+        dryRun: ${{inputs.dryRun || 'false'}}
+        githubToken: ${{env.PUSH_BACK_TOKEN}}
+        bumperFile: 'repository-activity.bumper'
+        commitMessage: '[push-back] Bump repository activity'
