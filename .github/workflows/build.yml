@@ -38,8 +38,8 @@ jobs:
       id: current
       uses: ./
       with:
+        tagName: 'v0.1.2'
         dryRun: 'true'
-        githubToken: ${{github.token}}
 
     # $$$sync-with-template-modifiable-end$$$
 
