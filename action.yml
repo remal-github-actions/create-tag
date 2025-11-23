@@ -20,7 +20,7 @@ inputs:
   forcePush:
     description: Set to 'true' to enable force push
     required: true
-    default: 'false'
+    default: 'true'
   dryRun:
     description: Set to 'true' to disable Git push
     required: true
@@ -47,12 +47,12 @@ runs:
       git config user.email "${{inputs.committerEmail}}"
 
       echo Creating tag...
-      git tag --force ${{inputs.message && format('-m "{0}"', inputs.message) || ''}} "${{inputs.tagName}}"
+      git tag --force -a "${{inputs.tagName}}" ${{inputs.message && format('-m "{0}"', inputs.message) || ''}}
 
       echo Pushing...
       set +e
       push_log_file="$(mktemp)"
-      git push ${{fromJSON(inputs.dryRun) && '--dry-run' || ''}} origin "refs/tags/${{github.tagName}}" 2>&1 | tee "$push_log_file"
+      git push ${{fromJSON(inputs.dryRun) && '--dry-run' || ''}} ${{fromJSON(inputs.forcePush) && '--force' || ''}} origin "refs/tags/${{github.tagName}}" 2>&1 | tee "$push_log_file"
       push_exit=${PIPESTATUS[0]}
       set -e
 
@@ -60,7 +60,7 @@ runs:
         echo Push succeeded.
         echo "result=pushed-successfully" >> $GITHUB_OUTPUT
       elif grep -q "non-fast-forward" "$push_log_file" || grep -q "\[rejected\]" "$push_log_file"; then
-        echo Push rejected because remote has new commits.
+        echo Push rejected (remote changed or conflicting tag).
         echo "result=remote-changed" >> $GITHUB_OUTPUT
       else
         echo Push failed for some other reason.
