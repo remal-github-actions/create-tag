@@ -52,7 +52,7 @@ runs:
       echo Pushing...
       set +e
       push_log_file="$(mktemp)"
-      git push ${{fromJSON(inputs.dryRun) && '--dry-run' || ''}} ${{fromJSON(inputs.forcePush) && '--force' || ''}} origin "refs/tags/${{github.tagName}}" 2>&1 | tee "$push_log_file"
+      git push ${{fromJSON(inputs.dryRun) && '--dry-run' || ''}} ${{fromJSON(inputs.forcePush) && '--force' || ''}} origin "refs/tags/${{inputs.tagName}}" 2>&1 | tee "$push_log_file"
       push_exit=${PIPESTATUS[0]}
       set -e
 
