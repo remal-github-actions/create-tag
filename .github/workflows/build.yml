@@ -52,6 +52,6 @@ jobs:
 
     - name: Create tag
       if: ${{github.event_name == 'push' && github.ref == 'refs/heads/main'}}
-      uses: remal-github-actions/create-tag@main
+      uses: remal-github-actions/create-tag@v2
       with:
         tagName: 'v${{steps.get-version.outputs.version}}'
