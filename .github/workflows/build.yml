@@ -49,3 +49,9 @@ jobs:
       run: |
         VERSION=$(yq '.version' action.yml)
         echo "version=$VERSION" | tee -a $GITHUB_OUTPUT
+
+    - name: Create tag
+      if: ${{github.event_name == 'push' && github.ref == 'refs/heads/main'}}
+      uses: remal-github-actions/create-tag@main
+      with:
+        tagName: 'v${{steps.get-version.outputs.version}}'
