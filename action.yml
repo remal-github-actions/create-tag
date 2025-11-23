@@ -57,7 +57,7 @@ runs:
         git tag --force "${{inputs.tagName}}"
       fi
 
-      echo Pushing${{fromJSON(inputs.forcePush) && ' (with --force)' || ''}}...
+      echo "Pushing${{fromJSON(inputs.forcePush) && ' (with --force)' || ''}}..."
       set +e
       push_log_file="$(mktemp)"
       git push ${{fromJSON(inputs.dryRun) && '--dry-run' || ''}} ${{fromJSON(inputs.forcePush) && '--force' || ''}} origin "refs/tags/${{inputs.tagName}}" 2>&1 | tee "$push_log_file"
