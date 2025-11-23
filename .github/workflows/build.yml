@@ -38,7 +38,7 @@ jobs:
       id: current
       uses: ./
       with:
-        tagName: 'v0.1.2'
+        tagName: 'test-tag'
         dryRun: 'true'
 
     # $$$sync-with-template-modifiable-end$$$
