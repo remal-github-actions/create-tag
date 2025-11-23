@@ -19,11 +19,11 @@ inputs:
     default: '41898282+github-actions[bot]@users.noreply.github.com'
   forcePush:
     description: Set to 'true' to enable force push
-    required: true
+    required: false
     default: 'true'
   dryRun:
     description: Set to 'true' to disable Git push
-    required: true
+    required: false
     default: 'false'
 
 outputs:
@@ -39,6 +39,8 @@ runs:
   - name: Configure git, commit & push
     id: commit
     shell: bash
+    env:
+      TAG_MESSAGE: ${{inputs.message}}
     run: |
       set -euo pipefail
 
@@ -47,9 +49,15 @@ runs:
       git config user.email "${{inputs.committerEmail}}"
 
       echo Creating tag...
-      git tag --force -a "${{inputs.tagName}}" ${{inputs.message && format('-m "{0}"', inputs.message) || ''}}
+      if [[ -n "${TAG_MESSAGE:-}" ]]; then
+        echo "Creating annotated tag (with message)..."
+        git tag --force -a "${{inputs.tagName}}" -m "$TAG_MESSAGE"
+      else
+        echo "Creating lightweight tag (no message)..."
+        git tag --force "${{inputs.tagName}}"
+      fi
 
-      echo Pushing...
+      echo Pushing${{fromJSON(inputs.forcePush) && ' (with --force)' || ''}}...
       set +e
       push_log_file="$(mktemp)"
       git push ${{fromJSON(inputs.dryRun) && '--dry-run' || ''}} ${{fromJSON(inputs.forcePush) && '--force' || ''}} origin "refs/tags/${{inputs.tagName}}" 2>&1 | tee "$push_log_file"
