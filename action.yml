@@ -36,40 +36,73 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: Configure git, commit & push
+  - name: Create and push tag
     id: commit
     shell: bash
+    # Inputs are forwarded via env to keep them out of the shell-text body, so
+    # values like `foo"; rm -rf /; echo "` cannot escape into shell parsing.
     env:
-      TAG_MESSAGE: ${{inputs.message}}
+      INPUT_TAG_NAME: ${{inputs.tagName}}
+      INPUT_MESSAGE: ${{inputs.message}}
+      INPUT_COMMITTER_NAME: ${{inputs.committerName}}
+      INPUT_COMMITTER_EMAIL: ${{inputs.committerEmail}}
+      INPUT_FORCE_PUSH: ${{inputs.forcePush}}
+      INPUT_DRY_RUN: ${{inputs.dryRun}}
+      # Fail fast on any auth/credential prompt instead of hanging the runner.
+      GIT_TERMINAL_PROMPT: "0"
+      GIT_ASKPASS: /bin/true
+      SSH_ASKPASS: /bin/true
+      SSH_ASKPASS_REQUIRE: never
     run: |
       set -euo pipefail
 
-      echo Configuring Git user...
-      git config user.name "${{inputs.committerName}}"
-      git config user.email "${{inputs.committerEmail}}"
-
-      echo Creating tag...
-      if [[ -n "${TAG_MESSAGE:-}" ]]; then
-        echo "Creating annotated tag (with message)..."
-        git tag --force -a "${{inputs.tagName}}" -m "$TAG_MESSAGE"
-      else
-        echo "Creating lightweight tag (no message)..."
-        git tag --force "${{inputs.tagName}}"
+      if [[ -z "$INPUT_TAG_NAME" ]]; then
+        echo "::error::tagName must not be empty" >&2
+        exit 1
+      fi
+      if [[ "$INPUT_TAG_NAME" == refs/* ]]; then
+        echo "::error::tagName must be a tag name, not a ref (got '$INPUT_TAG_NAME')" >&2
+        exit 1
       fi
 
-      echo "Pushing${{fromJSON(inputs.forcePush) && ' (with --force)' || ''}}..."
+      tag_args=()
+      push_args=(origin "refs/tags/$INPUT_TAG_NAME")
+      if [[ "$INPUT_FORCE_PUSH" == "true" ]]; then
+        tag_args+=(--force)
+        push_args=(--force "${push_args[@]}")
+      fi
+      if [[ "$INPUT_DRY_RUN" == "true" ]]; then
+        push_args=(--dry-run "${push_args[@]}")
+      fi
+
+      echo Configuring Git user...
+      git config user.name "$INPUT_COMMITTER_NAME"
+      git config user.email "$INPUT_COMMITTER_EMAIL"
+
+      echo Creating tag...
+      if [[ -n "$INPUT_MESSAGE" ]]; then
+        echo "Creating annotated tag (with message)..."
+        git tag ${tag_args[@]+"${tag_args[@]}"} -a "$INPUT_TAG_NAME" -m "$INPUT_MESSAGE"
+      else
+        echo "Creating lightweight tag (no message)..."
+        git tag ${tag_args[@]+"${tag_args[@]}"} "$INPUT_TAG_NAME"
+      fi
+
+      echo Pushing...
       set +e
       push_log_file="$(mktemp)"
-      git push ${{fromJSON(inputs.dryRun) && '--dry-run' || ''}} ${{fromJSON(inputs.forcePush) && '--force' || ''}} origin "refs/tags/${{inputs.tagName}}" 2>&1 | tee "$push_log_file"
+      # `--porcelain` makes the per-ref status machine-parseable: rejected refs
+      # always start with `!`, regardless of locale.
+      git push --porcelain "${push_args[@]}" 2>&1 | tee "$push_log_file"
       push_exit=${PIPESTATUS[0]}
       set -e
 
       if [[ $push_exit -eq 0 ]]; then
         echo Push succeeded.
-        echo "result=pushed-successfully" >> $GITHUB_OUTPUT
-      elif grep -q "non-fast-forward" "$push_log_file" || grep -q "\[rejected\]" "$push_log_file"; then
-        echo "Push rejected (remote changed or conflicting tag)."
-        echo "result=remote-changed" >> $GITHUB_OUTPUT
+        echo "result=tagged-successfully" >> "$GITHUB_OUTPUT"
+      elif grep -q '^!' "$push_log_file"; then
+        echo Push rejected by remote.
+        echo "result=remote-changed" >> "$GITHUB_OUTPUT"
       else
         echo Push failed for some other reason.
         exit 1
